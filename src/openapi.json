@@ -1,8 +1,8 @@
 {
   "openapi": "1.0.0",
   "info": {
-    "title": "Theresa",
-    "author": "Z7:林企业",
+    "title": "malix",
+    "author": "zyro",
     "version": "v1.0.0",
     "description": "Simple and easy to use API."
   },
@@ -193,6 +193,78 @@
     }
   }
 },
+      "/download/mediafire": {
+      "get": {
+        "summary": "MediaFire Downloader",
+        "description": "Mengambil link unduhan langsung beserta detail informasi file dari MediaFire.",
+        "tags": ["Downloader"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "URL halaman file MediaFire yang ingin diunduh",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "https://www.mediafire.com/file/example/file.zip/file"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil mendapatkan detail dan link unduhan MediaFire",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "filename": { "type": "string", "example": "sample.zip" },
+                        "filesize": { "type": "string", "example": "10.5 MB" },
+                        "ext": { "type": "string", "example": "zip" },
+                        "download_url": { "type": "string", "format": "uri", "example": "https://download123.mediafire.com/..." }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "URL tidak diisi atau tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "error": { "type": "string", "example": "Url is required" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Gagal memproses permintaan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "error": { "type": "string", "example": "Gagal mengambil data MediaFire" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
     "/download/capcut": {
   "get": {
     "summary": "CapCut Downloader",
