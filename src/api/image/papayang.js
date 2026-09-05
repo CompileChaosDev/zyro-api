@@ -4,20 +4,30 @@ module.exports = function(app) {
 
     async function papAyang() {
         try {
-            // Ambil daftar URL dari GitHub
             const { data } = await axios.get(
                 "https://raw.githubusercontent.com/mamixx15/papayang/refs/heads/main/pap-ayang.json"
             );
 
             if (!data || !Array.isArray(data) || data.length === 0) {
-                throw new Error("No images found");
+                throw new Error("Daftar gambar tidak ditemukan");
             }
 
-            // Pilih random URL
-            const randomUrl = data[Math.floor(Math.random() * data.length)];
+            
+            const validUrls = data.filter(url => !url.includes("cloudkuimages.guru"));
 
-            // Ambil gambar sebagai buffer
-            const response = await axios.get(randomUrl, { responseType: "arraybuffer" });
+            if (validUrls.length === 0) {
+                throw new Error("Semua link gambar di database sedang mati/expired.");
+            }
+
+            
+            const randomUrl = validUrls[Math.floor(Math.random() * validUrls.length)];
+
+            
+            const response = await axios.get(randomUrl, { 
+                responseType: "arraybuffer",
+                timeout: 5000 
+            });
+            
             return Buffer.from(response.data);
 
         } catch (error) {
@@ -29,13 +39,14 @@ module.exports = function(app) {
         try {
             const buffer = await papAyang();
             res.writeHead(200, {
-                "Content-Type": "image/png",
+                "Content-Type": "image/jpeg",
                 "Content-Length": buffer.length
             });
             res.end(buffer);
         } catch (error) {
             res.status(500).json({
                 status: false,
+                creator: "Zyro API",
                 message: error.message
             });
         }
