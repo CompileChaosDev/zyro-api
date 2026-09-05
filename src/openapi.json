@@ -102,6 +102,54 @@
         }
       }
     },
+    "/download/instagram": {
+      "get": {
+        "summary": "Instagram Downloader",
+        "description": "Mengambil media (foto, video, reels) dari URL Instagram publik.",
+        "tags": ["Downloader"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "URL postingan atau reels Instagram yang ingin diunduh",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "https://www.instagram.com/reel/Cxxxxxx/"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Berhasil mendapatkan media dari Instagram" },
+          "400": { "description": "URL tidak diisi atau tidak valid" },
+          "500": { "description": "Gagal memproses request atau akun privat" }
+        }
+      }
+    },
+    "/download/facebook": {
+      "get": {
+        "summary": "Facebook Downloader",
+        "description": "Mengambil link video HD/SD dari postingan atau reel Facebook publik.",
+        "tags": ["Downloader"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "URL video Facebook atau fb.watch yang ingin diunduh",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "https://www.facebook.com/watch/?v=123456789"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Berhasil mendapatkan link unduhan video Facebook" },
+          "400": { "description": "URL tidak diisi atau tidak valid" },
+          "500": { "description": "Gagal memproses request atau video privat" }
+        }
+      }
+    },
     "/download/capcut": {
       "get": {
         "summary": "CapCut Downloader",

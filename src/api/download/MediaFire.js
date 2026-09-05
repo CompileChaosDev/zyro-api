@@ -19,13 +19,13 @@ async function mediafireDl(url) {
     const $ = cheerio.load(response.data);
     const downloadUrl = $("#downloadButton").attr("href");
     
-    // Ambil nama file & bersihkan spasi berlebih
+   
     let filename = $(".dl-btn-label").attr("title") || 
                    $(".filename").first().text().trim() || 
                    "";
     filename = filename.replace(/\s+/g, " ");
 
-    // Ambil filesize dari teks tombol download atau list detail
+   
     let filesize = "";
     const btnText = $("#downloadButton").text().trim();
     const matchSize = btnText.match(/\((.*?)\)/);
