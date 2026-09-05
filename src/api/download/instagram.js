@@ -30,7 +30,8 @@ async function downloadIg(url) {
 }
 
 module.exports = function (app) {
-  app.get("/downloader/ig", async (req, res) => {
+  // Samakan dengan openapi.json
+  app.get("/download/instagram", async (req, res) => {
     try {
       const { url } = req.query;
 
