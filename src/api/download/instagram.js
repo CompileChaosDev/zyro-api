@@ -1,54 +1,37 @@
 const axios = require("axios");
 
-async function fastdlDl(url) {
+async function kolDl(url) {
   if (!/instagram\.com/.test(url)) {
     throw new Error("URL harus berasal dari instagram.com");
   }
 
   try {
-    // 1. Kirim request HTTP POST ke endpoint internal FastDL
-    const response = await axios.post(
-      "https://fastdl.app/api/convert",
-      { url: url },
+    const { data } = await axios.post(
+      "https://kol.id/api/download-instagram",
+      { url },
       {
         headers: {
           "Content-Type": "application/json",
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Origin: "https://fastdl.app",
-          Referer: "https://fastdl.app/",
+          Origin: "https://kol.id",
+          Referer: "https://kol.id/download-video/instagram",
         },
       }
     );
 
-    const data = response.data;
-
-    // 2. Parsing hasil JSON
-    if (data?.url && Array.isArray(data.url) && data.url.length > 0) {
-      const bestVideo = data.url.reduce((prev, curr) =>
-        (curr.quality || 0) > (prev.quality || 0) ? curr : prev
-      );
-
-      return {
-        original_url: url,
-        title: data.meta?.title || "Untitled",
-        username: data.meta?.username || "unknown",
-        shortcode: data.meta?.shortcode || "",
-        thumbnail: data.meta?.thumbnail || null,
-        download_url: bestVideo.url,
-        quality: bestVideo.subname || `${bestVideo.quality}p`,
-        type: bestVideo.type || bestVideo.ext || "mp4",
-        all_qualities: data.url,
-      };
+    if (!data || !data.data) {
+      throw new Error("Gagal mengambil data dari KOL.ID atau link privat");
     }
 
-    throw new Error("Media tidak ditemukan atau postingan bersifat privat");
+    return data.data;
   } catch (err) {
-    throw new Error(err.response?.data?.message || err.message || "Gagal mengambil data dari FastDL");
+    throw new Error(
+      err.response?.data?.message || err.message || "Gagal memproses link Instagram"
+    );
   }
 }
 
-// Router untuk Express.js kamu
 module.exports = function (app) {
   app.get("/download/instagram", async (req, res) => {
     const { url } = req.query;
@@ -58,7 +41,8 @@ module.exports = function (app) {
     }
 
     try {
-      const result = await fastdlDl(url);
+      const result = await kolDl(url);
+
       res.status(200).json({
         status: true,
         creator: "zyro",
