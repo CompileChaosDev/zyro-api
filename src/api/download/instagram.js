@@ -5,15 +5,26 @@ async function igexportDl(url) {
   if (!/instagram\.com/.test(url)) throw new Error("URL harus dari instagram.com");
 
   try {
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    
+    // 1. Ambil session/cookie awal dari halaman utama
+    const initPage = await axios.get("https://igexport.com/id/", {
+      headers: { "User-Agent": userAgent }
+    });
+
+    const cookies = initPage.headers["set-cookie"]?.join("; ") || "";
+
+    // 2. Tembak request POST membawa cookie
     const { data } = await axios.post(
       "https://igexport.com/id/download",
       new URLSearchParams({ url }),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "User-Agent": userAgent,
           "X-Requested-With": "XMLHttpRequest",
-          "Referer": "https://igexport.com/id/"
+          "Referer": "https://igexport.com/id/",
+          "Cookie": cookies
         },
       }
     );
@@ -23,7 +34,6 @@ async function igexportDl(url) {
     const $ = cheerio.load(data.html);
     const media = [];
 
-    // Mengambil semua link tombol download video/image
     $("a[href*='download']").each((_, el) => {
       const link = $(el).attr("href");
       if (link && !media.includes(link)) {
@@ -41,18 +51,3 @@ async function igexportDl(url) {
     throw new Error(err.message || "Gagal memproses link IGExport");
   }
 }
-
-// Router Express
-module.exports = function (app) {
-  app.get("/download/instagram", async (req, res) => {
-    const { url } = req.query;
-    if (!url) return res.status(400).json({ status: false, error: "Url is required" });
-
-    try {
-      const result = await igexportDl(url);
-      res.status(200).json({ status: true, creator: "zyro", result });
-    } catch (err) {
-      res.status(500).json({ status: false, error: err.message });
-    }
-  });
-};
