@@ -1,74 +1,76 @@
 const axios = require("axios");
 const FormData = require("form-data");
 
-async function uploadCatbox(fileBuffer, originalname) {
-  try {
-    const form = new FormData();
-    form.append("reqtype", "fileupload");
-    form.append("fileToUpload", fileBuffer, { filename: originalname || "file.jpg" });
+async function uploadToCatbox(fileBuffer, fileName = "file.jpg") {
+  const form = new FormData();
+  form.append("reqtype", "fileupload");
+  form.append("fileToUpload", fileBuffer, { filename: fileName });
 
-    const { data } = await axios.post("https://catbox.moe/user/api.php", form, {
-      headers: {
-        ...form.getHeaders(),
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      timeout: 60000,
-    });
+  const result = await axios.post("https://catbox.moe/user/api.php", form, {
+    headers: {
+      ...form.getHeaders(),
+    },
+    timeout: 120000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
 
-    if (typeof data === "string" && data.startsWith("https://files.catbox.moe/")) {
-      return data.trim();
-    }
+  const url = String(result.data || "").trim();
 
-    throw new Error("Gagal mengunggah file ke Catbox");
-  } catch (error) {
-    throw new Error(error.message || "Gagal memproses upload Catbox");
+  if (!url || !/^https?:\/\/.+/i.test(url)) {
+    throw new Error("Catbox tidak mengembalikan URL yang valid.");
   }
+
+  return url;
 }
 
 module.exports = function (app) {
-  app.post("/tools/catbox", async (req, res) => {
+  app.all("/tools/catbox", async (req, res) => {
     try {
-      let fileBuffer;
-      let filename = "upload.jpg";
+      let fileBuffer = null;
+      let fileName = `file_${Date.now()}.jpg`;
       let mimetype = "image/jpeg";
-      let size = 0;
 
-      // 1. Cek jika file dikirim via form file upload
+      // 1. Ambil file dari Upload Form (jika UI/Postman berhasil ngirim)
       if (req.files && Object.keys(req.files).length > 0) {
         const uploadedFile = req.files.file || Object.values(req.files)[0];
         fileBuffer = uploadedFile.data;
-        filename = uploadedFile.name;
+        fileName = uploadedFile.name;
         mimetype = uploadedFile.mimetype;
-        size = uploadedFile.size;
-      } 
-      // 2. Cek jika dikirim via parameter Body / Query URL (?url=https://...)
-      else if (req.body?.url || req.query?.url) {
-        const targetUrl = req.body?.url || req.query?.url;
-        const response = await axios.get(targetUrl, { responseType: "arraybuffer" });
+      }
+      // 2. Ambil file dari Query/Body URL (Persis seperti logika bot Telegram-mu)
+      else if (req.query?.url || req.body?.url) {
+        const targetUrl = req.query?.url || req.body?.url;
+        const response = await axios.get(targetUrl, {
+          responseType: "arraybuffer",
+          timeout: 60000,
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+
         fileBuffer = Buffer.from(response.data);
-        filename = targetUrl.split("/").pop().split("?")[0] || "file.jpg";
-        mimetype = response.headers["content-type"] || "application/octet-stream";
-        size = fileBuffer.length;
-      } 
-      else {
+        fileName = targetUrl.split("/").pop().split("?")[0] || `file_${Date.now()}.jpg`;
+        mimetype = response.headers["content-type"] || "image/jpeg";
+      }
+
+      if (!fileBuffer) {
         return res.status(400).json({
           status: false,
           creator: "zyro",
-          error: "File is required! Upload file via form 'file' atau masukkan parameter 'url'",
+          error: "Masukkan parameter '?url=' atau upload file via multipart/form-data.",
         });
       }
 
-      const url = await uploadCatbox(fileBuffer, filename);
+      const url = await uploadToCatbox(fileBuffer, fileName);
 
       return res.status(200).json({
         status: true,
         creator: "zyro",
         result: {
-          filename,
-          size,
-          mimetype,
-          url,
+          filename: fileName,
+          size: fileBuffer.length,
+          mimetype: mimetype,
+          url: url,
         },
       });
     } catch (err) {
