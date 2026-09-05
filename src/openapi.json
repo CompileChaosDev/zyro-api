@@ -7,7 +7,9 @@
     "description": "Simple and easy to use API."
   },
   "servers": [
-    { "url": "/" }
+    {
+      "url": "/"
+    }
   ],
   "tags": [
     { "name": "AI" },
@@ -36,7 +38,11 @@
             "in": "query",
             "required": false,
             "description": "Model Copilot yang digunakan (default: 'default', opsional: 'think-deeper', 'gpt-5')",
-            "schema": { "type": "string", "enum": ["default", "think-deeper", "gpt-5"], "default": "default" }
+            "schema": {
+              "type": "string",
+              "enum": ["default", "think-deeper", "gpt-5"],
+              "default": "default"
+            }
           }
         ],
         "responses": {
@@ -351,10 +357,11 @@
                   }
                 }
               }
+            },
+            "500": {
+              "description": "Gagal memproses request"
             }
-          },
-          "500": { 
-            "description": "Gagal memproses request" 
+          }
         }
       }
     }
