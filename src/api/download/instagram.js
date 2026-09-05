@@ -1,67 +1,56 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-async function instagramDl(url) {
-  try {
-    if (!/instagram\.com/.test(url)) {
-      throw new Error("URL harus berasal dari instagram.com");
-    }
+async function igexportDl(url) {
+  if (!/instagram\.com/.test(url)) throw new Error("URL harus dari instagram.com");
 
-    
-    const response = await axios.post(
-      "https://v3.viddown.net/api/ajaxSearch",
-      new URLSearchParams({ q: url, vt: "instagram" }),
+  try {
+    const { data } = await axios.post(
+      "https://igexport.com/id/download",
+      new URLSearchParams({ url }),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "X-Requested-With": "XMLHttpRequest",
+          "Referer": "https://igexport.com/id/"
         },
       }
     );
 
-    const $ = cheerio.load(response.data.data);
+    if (!data || !data.html) throw new Error("Gagal mengambil data dari IGExport");
+
+    const $ = cheerio.load(data.html);
     const media = [];
 
-    $(".download-items").each((_, el) => {
-      const downloadUrl = $(el).find(".download-items__btn a").attr("href");
-      const thumbnail = $(el).find(".download-items__thumb img").attr("src");
-      const type = downloadUrl?.includes(".mp4") ? "video" : "image";
-
-      if (downloadUrl) {
-        media.push({
-          type,
-          thumbnail: thumbnail || null,
-          url: downloadUrl,
-        });
+    // Mengambil semua link tombol download video/image
+    $("a[href*='download']").each((_, el) => {
+      const link = $(el).attr("href");
+      if (link && !media.includes(link)) {
+        media.push(link);
       }
     });
 
-    if (media.length === 0) {
-      throw new Error("Media tidak ditemukan atau akun bersifat privat");
-    }
+    if (media.length === 0) throw new Error("Media tidak ditemukan atau postingan privat");
 
-    return media;
-  } catch (error) {
-    throw new Error(error.message || "Gagal mengambil data Instagram");
+    return media.map((downloadUrl) => ({
+      type: downloadUrl.includes(".mp4") ? "video" : "image",
+      url: downloadUrl
+    }));
+  } catch (err) {
+    throw new Error(err.message || "Gagal memproses link IGExport");
   }
 }
 
-
+// Router Express
 module.exports = function (app) {
   app.get("/download/instagram", async (req, res) => {
     const { url } = req.query;
-
-    if (!url) {
-      return res.status(400).json({ status: false, error: "Url is required" });
-    }
+    if (!url) return res.status(400).json({ status: false, error: "Url is required" });
 
     try {
-      const result = await instagramDl(url);
-      res.status(200).json({
-        status: true,
-        creator: "zyro",
-        result,
-      });
+      const result = await igexportDl(url);
+      res.status(200).json({ status: true, creator: "zyro", result });
     } catch (err) {
       res.status(500).json({ status: false, error: err.message });
     }
