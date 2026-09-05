@@ -359,31 +359,33 @@
         }
       }
     },
-    "/tools/wareact": {
-      "get": {
-        "summary": "WhatsApp Auto React",
-        "description": "Mengirim reaksi emoji otomatis ke link WhatsApp",
+    "/tools/catbox": {
+      "post": {
+        "summary": "Catbox File Uploader",
+        "description": "Unggah file (gambar, video, dokumen) ke Catbox CDN dan dapatkan URL langsung",
         "tags": ["Tools"],
-        "parameters": [
-          {
-            "name": "url",
-            "in": "query",
-            "required": true,
-            "description": "URL pesan atau channel WhatsApp target",
-            "schema": { "type": "string", "format": "uri" }
-          },
-          {
-            "name": "emojis",
-            "in": "query",
-            "required": false,
-            "description": "Daftar emoji yang dipisahkan koma (contoh: 😂,🔥,👍)",
-            "schema": { "type": "string", "example": "😂,🔥" }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File yang ingin diunggah"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
           }
-        ],
+        },
         "responses": {
-          "200": { "description": "Berhasil mengirim reaksi WhatsApp" },
-          "400": { "description": "Parameter URL tidak diisi" },
-          "500": { "description": "Gagal memproses reaksi" }
+          "200": { "description": "Berhasil mengunggah file ke Catbox" },
+          "400": { "description": "File tidak dilampirkan" },
+          "500": { "description": "Gagal mengunggah file" }
         }
       }
     }
