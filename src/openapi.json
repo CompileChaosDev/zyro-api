@@ -109,7 +109,7 @@
         }
       }
     },
-        "/download/ytmp3": {
+    "/download/ytmp3": {
       "get": {
         "summary": "YouTube MP3 Downloader",
         "description": "Mengubah dan mengunduh audio MP3 dari URL video/shorts YouTube beserta metadata lengkap.",
@@ -132,7 +132,7 @@
           "500": { "description": "Gagal memproses request dari server sumber" }
         }
       }
-    }
+    },
     "/download/instagram": {
       "get": {
         "summary": "Instagram Downloader",
