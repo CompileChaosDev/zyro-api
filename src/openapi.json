@@ -109,6 +109,30 @@
         }
       }
     },
+        "/download/ytmp3": {
+      "get": {
+        "summary": "YouTube MP3 Downloader",
+        "description": "Mengubah dan mengunduh audio MP3 dari URL video/shorts YouTube beserta metadata lengkap.",
+        "tags": ["Downloader"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "URL video atau shorts YouTube yang ingin diunduh audio MP3-nya",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "https://youtu.be/_e9xhF69kFs"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Berhasil mendapatkan link unduhan MP3 dan metadata video" },
+          "400": { "description": "URL tidak diisi atau format URL invalid" },
+          "500": { "description": "Gagal memproses request dari server sumber" }
+        }
+      }
+    }
     "/download/instagram": {
       "get": {
         "summary": "Instagram Downloader",
