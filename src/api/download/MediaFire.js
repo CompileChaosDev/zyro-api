@@ -18,10 +18,25 @@ async function mediafireDl(url) {
 
     const $ = cheerio.load(response.data);
     const downloadUrl = $("#downloadButton").attr("href");
-    const filename =
-      $(".dl-info .filename").text().trim() ||
-      $(".dl-btn-label").text().trim();
-    const filesize = $(".dl-info .filesize span").text().trim();
+    
+    // Ambil nama file & bersihkan spasi berlebih
+    let filename = $(".dl-btn-label").attr("title") || 
+                   $(".filename").first().text().trim() || 
+                   "";
+    filename = filename.replace(/\s+/g, " ");
+
+    // Ambil filesize dari teks tombol download atau list detail
+    let filesize = "";
+    const btnText = $("#downloadButton").text().trim();
+    const matchSize = btnText.match(/\((.*?)\)/);
+
+    if (matchSize && matchSize[1]) {
+      filesize = matchSize[1];
+    } else {
+      filesize = $(".details li").last().find("span").text().trim() || 
+                 $(".dl-info .filesize").text().trim();
+    }
+
     const ext = filename ? filename.split(".").pop() : "";
 
     if (!downloadUrl) {
@@ -51,6 +66,7 @@ module.exports = function (app) {
 
       res.status(200).json({
         status: true,
+        creator: "zyro",
         result,
       });
     } catch (err) {
