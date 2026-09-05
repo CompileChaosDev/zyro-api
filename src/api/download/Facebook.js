@@ -1,119 +1,130 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
+const axios = require('axios');
+const cheerio = require('cheerio');
+const qs = require('qs');
 
-async function facebookDl(url) {
-  try {
-    if (!/^(https?:\/\/)?(www\.|m\.)?(facebook\.com|fb\.watch)\//i.test(url)) {
-      throw new Error("URL harus berasal dari facebook.com atau fb.watch");
+async function fetchFgetLinks(fbUrl) {
+    try {
+        const payload = qs.stringify({ id: fbUrl, locale: 'id' });
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Hx-Current-Url': 'https://fget.io/id',
+            'Hx-Request': 'true',
+            'Hx-Target': 'target',
+            'Hx-Trigger': 'form',
+            'Origin': 'https://fget.io',
+            'Referer': 'https://fget.io/id'
+        };
+
+        const { data: html } = await axios.post('https://fget.io/process', payload, { headers });
+        const $ = cheerio.load(html);
+
+        const thumbnail = $('.result-thumbnail img').attr('src') || null;
+        const downloads = [];
+
+        $('.space-y-2 .flex').each((_, el) => {
+            const quality = $(el).find('.text-sm').text().trim();
+            const type = $(el).find('.text-xs').text().replace(/[()]/g, '').trim();
+            const url = $(el).find('a').attr('href');
+
+            if (quality && url) {
+                downloads.push({ quality, type, url });
+            }
+        });
+
+        return { thumbnail, downloads };
+    } catch {
+        return { thumbnail: null, downloads: [] };
     }
+}
 
-    const params = new URLSearchParams();
-    params.append("URLz", url);
+async function fetchWayInMeta(fbUrl) {
+    try {
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+            'Content-Type': 'application/json',
+            'Origin': 'https://wayin.ai',
+            'Referer': 'https://wayin.ai/',
+            'X-Platform': 'web'
+        };
 
-    const response = await axios.post("https://fdown.net/download.php", params, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://fdown.net/",
-        "Origin": "https://fdown.net"
-      },
-      timeout: 30000
-    });
+        const parseRes = await axios.post(
+            `https://wayinvideo-api.wayin.ai/api/parse_url?url=${encodeURIComponent(fbUrl)}`,
+            {},
+            { headers }
+        );
 
-    const $ = cheerio.load(response.data);
+        const cleanVideoUrl = parseRes.data?.data || fbUrl;
 
-    const title =
-      $(".lib-row .lib-header").text().trim() ||
-      $(".lead").first().text().trim() ||
-      "Facebook Video";
+        const metaRes = await axios.post(
+            'https://wayinvideo-api.wayin.ai/api/p/v2/get_video_meta',
+            { video_url: cleanVideoUrl },
+            { headers }
+        );
 
-    const thumbnail =
-      $(".lib-row img").attr("src") ||
-      $("#result img").attr("src") ||
-      null;
+        const meta = metaRes.data?.data || {};
 
-    const sdLink = $("#sdlink").attr("href");
-    const hdLink = $("#hdlink").attr("href");
-
-    const downloads = [];
-
-    if (sdLink) {
-      downloads.push({
-        quality: "SD",
-        url: sdLink
-      });
+        return {
+            title: meta.title || null,
+            author: meta.author || null,
+            abstract: meta.abstract || null,
+            duration: meta.duration ? `${Math.floor(meta.duration / 1000)}s` : null,
+            view_count: meta.view_count || 0,
+            comment_count: meta.comment_count || 0,
+            like_count: meta.like_count || 0,
+            published_at: meta.published_at ? new Date(meta.published_at * 1000).toISOString() : null,
+            resolution: meta.res || null
+        };
+    } catch {
+        return null;
     }
+}
 
-    if (hdLink) {
-      downloads.push({
-        quality: "HD",
-        url: hdLink
-      });
+async function fbDownloader(fbUrl) {
+    const [fgetData, metaData] = await Promise.all([
+        fetchFgetLinks(fbUrl),
+        fetchWayInMeta(fbUrl)
+    ]);
+
+    if (!fgetData.downloads.length) {
+        throw new Error('Gagal mengambil link download media.');
     }
-
-    // Fallback jika ID #sdlink / #hdlink tidak ditemukan
-    if (downloads.length === 0) {
-      $("a").each((_, el) => {
-        const href = $(el).attr("href");
-        const text = $(el).text().trim();
-
-        if (href && href.startsWith("http") && !href.includes("fdown.net")) {
-          if (/download/i.test(text) || /video/i.test(href)) {
-            downloads.push({
-              quality: /hd/i.test(text) ? "HD" : "SD",
-              url: href
-            });
-          }
-        }
-      });
-    }
-
-    if (downloads.length === 0) {
-      throw new Error("Video tidak ditemukan, bersifat privat, atau FDown gagal memproses link");
-    }
-
-    // Hapus duplicate link jika ada
-    const uniqueDownloads = downloads.filter(
-      (item, index, self) => index === self.findIndex((x) => x.url === item.url)
-    );
 
     return {
-      title,
-      thumbnail,
-      downloads: uniqueDownloads
+        metadata: metaData || { title: 'No Metadata Available' },
+        downloads: {
+            thumbnail: fgetData.thumbnail,
+            links: fgetData.downloads
+        }
     };
-  } catch (error) {
-    throw new Error(error.message || "Gagal mengambil data Facebook");
-  }
 }
 
 module.exports = function (app) {
-  app.get("/download/facebook", async (req, res) => {
-    const { url } = req.query;
+    app.get('/download/facebook', async (req, res) => {
+        try {
+            const { url } = req.query;
 
-    if (!url) {
-      return res.status(400).json({
-        status: false,
-        creator: "zyro",
-        error: "Url is required"
-      });
-    }
+            if (!url) {
+                return res.status(400).json({
+                    status: false,
+                    creator: 'zyro',
+                    message: "Parameter 'url' wajib diisi (contoh: ?url=https://www.facebook.com/...)"
+                });
+            }
 
-    try {
-      const result = await facebookDl(url);
+            const data = await fbDownloader(url);
 
-      return res.status(200).json({
-        status: true,
-        creator: "zyro",
-        result
-      });
-    } catch (err) {
-      return res.status(500).json({
-        status: false,
-        creator: "zyro",
-        error: err.message
-      });
-    }
-  });
+            return res.status(200).json({
+                status: true,
+                creator: 'zyro',
+                result: data
+            });
+        } catch (err) {
+            return res.status(500).json({
+                status: false,
+                creator: 'zyro',
+                message: err.message
+            });
+        }
+    });
 };
