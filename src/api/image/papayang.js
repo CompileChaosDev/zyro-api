@@ -4,28 +4,22 @@ module.exports = function(app) {
 
     async function papAyang() {
         try {
+            // Menggunakan database gambar alternatif yang aktif
             const { data } = await axios.get(
-                "https://raw.githubusercontent.com/mamixx15/papayang/refs/heads/main/pap-ayang.json"
+                "https://raw.githubusercontent.com/BagusSajiwo/database/main/papayang.json"
             );
 
             if (!data || !Array.isArray(data) || data.length === 0) {
                 throw new Error("Daftar gambar tidak ditemukan");
             }
 
-            
-            const validUrls = data.filter(url => !url.includes("cloudkuimages.guru"));
+            // Pilih random URL dari JSON baru
+            const randomUrl = data[Math.floor(Math.random() * data.length)];
 
-            if (validUrls.length === 0) {
-                throw new Error("Semua link gambar di database sedang mati/expired.");
-            }
-
-            
-            const randomUrl = validUrls[Math.floor(Math.random() * validUrls.length)];
-
-            
+            // Ambil gambar sebagai buffer
             const response = await axios.get(randomUrl, { 
                 responseType: "arraybuffer",
-                timeout: 5000 
+                timeout: 10000 
             });
             
             return Buffer.from(response.data);
