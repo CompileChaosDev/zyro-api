@@ -31,21 +31,19 @@ module.exports = function (app) {
       let fileName = `file_${Date.now()}.jpg`;
       let mimetype = "image/jpeg";
 
-      // 1. Ambil file dari Upload Form (jika UI/Postman berhasil ngirim)
+      // 1. Ambil dari File Upload (Swagger / Postman)
       if (req.files && Object.keys(req.files).length > 0) {
         const uploadedFile = req.files.file || Object.values(req.files)[0];
         fileBuffer = uploadedFile.data;
         fileName = uploadedFile.name;
         mimetype = uploadedFile.mimetype;
       }
-      // 2. Ambil file dari Query/Body URL (Persis seperti logika bot Telegram-mu)
+      // 2. Ambil dari Query/Body URL (Persis seperti bot Telegram)
       else if (req.query?.url || req.body?.url) {
         const targetUrl = req.query?.url || req.body?.url;
         const response = await axios.get(targetUrl, {
           responseType: "arraybuffer",
           timeout: 60000,
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
         });
 
         fileBuffer = Buffer.from(response.data);
@@ -57,7 +55,7 @@ module.exports = function (app) {
         return res.status(400).json({
           status: false,
           creator: "zyro",
-          error: "Masukkan parameter '?url=' atau upload file via multipart/form-data.",
+          error: "Sediakan file via form 'file' atau gunakan parameter '?url='",
         });
       }
 
