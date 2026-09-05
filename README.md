@@ -1,8 +1,8 @@
-# Theresa Api UI
+# malix Api UI
 
 A modern, clean, and user-friendly interface for browsing and testing Falcon API endpoints.
 
-![Theresa API UI Screenshot](image.png)
+![malix API UI Screenshot](image.png)
 
 ## Features
 
@@ -24,7 +24,7 @@ A modern, clean, and user-friendly interface for browsing and testing Falcon API
 
 1. Clone this repository to your web server:
    ```bash
-   git clone https://github.com/Z7-zhen/theresa.git
+   git clone https://github.com/CompileChaosDev/zyro-api.git
    ```
 
 2. Configure your API endpoints in `openapi.json` (see Configuration section below)
@@ -39,8 +39,8 @@ All API endpoints and categories are configured in the `openapi.json` file. The 
 {
   "openapi": "1.0.0",
   "info": {
-    "title": "Theresa",
-    "author": "Z7:林企业",
+    "title": "malix",
+    "author": "zyro",
     "version": "v1.0.0",
     "description": "Simple and easy to use API."
   },
@@ -184,7 +184,7 @@ Example:
       "status": true,
       "user": {
         "id": "123456789",
-        "name": "Theresa User",
+        "name": "malix User",
         "premium": true
       }
     }
@@ -240,5 +240,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-Created with ❤️ by FlowFalcon
-Recode by Z7:林企业 (https://github.com/Reyz2902)
+Created with ❤️ by malix
+Recode by zyro (https://github.com/CompileChaosDev)

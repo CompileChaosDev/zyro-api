@@ -355,37 +355,6 @@
           },
           "500": { 
             "description": "Gagal memproses request" 
-          }
-        }
-      }
-    },
-    "/tools/catbox": {
-      "post": {
-        "summary": "Catbox File Uploader",
-        "description": "Unggah file (gambar, video, dokumen) ke Catbox CDN dan dapatkan URL langsung",
-        "tags": ["Tools"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File yang ingin diunggah"
-                  }
-                },
-                "required": ["file"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Berhasil mengunggah file ke Catbox" },
-          "400": { "description": "File tidak dilampirkan" },
-          "500": { "description": "Gagal mengunggah file" }
         }
       }
     }
