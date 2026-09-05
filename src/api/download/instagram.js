@@ -1,53 +1,71 @@
 const axios = require("axios");
-const cheerio = require("cheerio");
 
-async function igexportDl(url) {
-  if (!/instagram\.com/.test(url)) throw new Error("URL harus dari instagram.com");
+async function fastdlDl(url) {
+  if (!/instagram\.com/.test(url)) {
+    throw new Error("URL harus berasal dari instagram.com");
+  }
 
   try {
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    
-    // 1. Ambil session/cookie awal dari halaman utama
-    const initPage = await axios.get("https://igexport.com/id/", {
-      headers: { "User-Agent": userAgent }
-    });
-
-    const cookies = initPage.headers["set-cookie"]?.join("; ") || "";
-
-    // 2. Tembak request POST membawa cookie
-    const { data } = await axios.post(
-      "https://igexport.com/id/download",
-      new URLSearchParams({ url }),
+    // 1. Kirim request HTTP POST ke endpoint internal FastDL
+    const response = await axios.post(
+      "https://fastdl.app/api/convert",
+      { url: url },
       {
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "User-Agent": userAgent,
-          "X-Requested-With": "XMLHttpRequest",
-          "Referer": "https://igexport.com/id/",
-          "Cookie": cookies
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Origin: "https://fastdl.app",
+          Referer: "https://fastdl.app/",
         },
       }
     );
 
-    if (!data || !data.html) throw new Error("Gagal mengambil data dari IGExport");
+    const data = response.data;
 
-    const $ = cheerio.load(data.html);
-    const media = [];
+    // 2. Parsing hasil JSON
+    if (data?.url && Array.isArray(data.url) && data.url.length > 0) {
+      const bestVideo = data.url.reduce((prev, curr) =>
+        (curr.quality || 0) > (prev.quality || 0) ? curr : prev
+      );
 
-    $("a[href*='download']").each((_, el) => {
-      const link = $(el).attr("href");
-      if (link && !media.includes(link)) {
-        media.push(link);
-      }
-    });
+      return {
+        original_url: url,
+        title: data.meta?.title || "Untitled",
+        username: data.meta?.username || "unknown",
+        shortcode: data.meta?.shortcode || "",
+        thumbnail: data.meta?.thumbnail || null,
+        download_url: bestVideo.url,
+        quality: bestVideo.subname || `${bestVideo.quality}p`,
+        type: bestVideo.type || bestVideo.ext || "mp4",
+        all_qualities: data.url,
+      };
+    }
 
-    if (media.length === 0) throw new Error("Media tidak ditemukan atau postingan privat");
-
-    return media.map((downloadUrl) => ({
-      type: downloadUrl.includes(".mp4") ? "video" : "image",
-      url: downloadUrl
-    }));
+    throw new Error("Media tidak ditemukan atau postingan bersifat privat");
   } catch (err) {
-    throw new Error(err.message || "Gagal memproses link IGExport");
+    throw new Error(err.response?.data?.message || err.message || "Gagal mengambil data dari FastDL");
   }
 }
+
+// Router untuk Express.js kamu
+module.exports = function (app) {
+  app.get("/download/instagram", async (req, res) => {
+    const { url } = req.query;
+
+    if (!url) {
+      return res.status(400).json({ status: false, error: "Url parameter is required" });
+    }
+
+    try {
+      const result = await fastdlDl(url);
+      res.status(200).json({
+        status: true,
+        creator: "zyro",
+        result,
+      });
+    } catch (err) {
+      res.status(500).json({ status: false, error: err.message });
+    }
+  });
+};
