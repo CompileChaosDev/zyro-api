@@ -1,8 +1,8 @@
 {
   "openapi": "1.0.0",
   "info": {
-    "title": "Theresa",
-    "author": "Z7:林企业",
+    "title": "malix",
+    "author": "zyro",
     "version": "v1.0.0",
     "description": "Simple and easy to use API."
   },
@@ -78,6 +78,30 @@
         }
       }
     },
+    "/download/mediafire": {
+      "get": {
+        "summary": "MediaFire Downloader",
+        "description": "Mengambil link unduhan langsung beserta detail informasi file dari MediaFire.",
+        "tags": ["Downloader"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "URL halaman file MediaFire yang ingin diunduh",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "https://www.mediafire.com/file/example/file.zip/file"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Berhasil mendapatkan detail dan link unduhan MediaFire" },
+          "400": { "description": "URL tidak diisi atau tidak valid" },
+          "500": { "description": "Gagal memproses permintaan" }
+        }
+      }
+    },
     "/download/capcut": {
       "get": {
         "summary": "CapCut Downloader",
@@ -110,7 +134,10 @@
             "in": "query",
             "description": "URL Pinterest / pin.it yang ingin di-download",
             "required": true,
-            "schema": { "type": "string", "example": "https://pin.it/lOPdveAO7" }
+            "schema": {
+              "type": "string",
+              "example": "https://pin.it/lOPdveAO7"
+            }
           }
         ],
         "responses": {
@@ -130,27 +157,6 @@
             "name": "url",
             "in": "query",
             "description": "URL video TikTok yang ingin diunduh",
-            "required": true,
-            "schema": { "type": "string", "format": "uri" }
-          }
-        ],
-        "responses": {
-          "200": { "description": "Respon berhasil" },
-          "400": { "description": "URL tidak disertakan" },
-          "500": { "description": "Gagal memproses request" }
-        }
-      }
-    },
-    "/download/mediafire": {
-      "get": {
-        "summary": "MediaFire Downloader",
-        "description": "Download file dari link MediaFire",
-        "tags": ["Downloader"],
-        "parameters": [
-          {
-            "name": "url",
-            "in": "query",
-            "description": "URL file MediaFire yang ingin didownload",
             "required": true,
             "schema": { "type": "string", "format": "uri" }
           }
@@ -199,7 +205,7 @@
           }
         ],
         "responses": {
-          "200": { "description": "Respon berhasil" },
+          "200": { "description": "Respon berhasil, mengembalikan image PNG" },
           "400": { "description": "Missing ?url= parameter" },
           "500": { "description": "Gagal memproses request" }
         }
@@ -260,8 +266,47 @@
         "description": "Scraping berita terbaru dari Kontan.co.id",
         "tags": ["News"],
         "responses": {
-          "200": { "description": "Respon berhasil" },
-          "500": { "description": "Gagal memproses request" }
+          "200": {
+            "description": "Respon berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "berita": {
+                        "type": "string",
+                        "example": "Rupiah menguat terhadap dolar AS pada perdagangan pagi ini"
+                      },
+                      "berita_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://www.kontan.co.id/news/rupiah-menguat"
+                      },
+                      "berita_thumb": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "example": "https://img.kontan.co.id/thumb.jpg"
+                      },
+                      "berita_jenis": {
+                        "type": "string",
+                        "example": "Makro Ekonomi"
+                      },
+                      "berita_diupload": {
+                        "type": "string",
+                        "example": "2 jam lalu"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { 
+            "description": "Gagal memproses request" 
+          }
         }
       }
     }
