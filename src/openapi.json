@@ -357,11 +357,35 @@
                   }
                 }
               }
-            },
-            "500": {
-              "description": "Gagal memproses request"
+            }
+          },
+          "500": {
+            "description": "Gagal memproses request"
+          }
+        }
+      }
+    },
+    "/stalk/ff": {
+      "get": {
+        "summary": "Free Fire Stalker",
+        "description": "Mengambil detail informasi akun Free Fire berdasarkan Player UID",
+        "tags": ["Tools"],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "query",
+            "required": true,
+            "description": "UID Player Free Fire",
+            "schema": {
+              "type": "string",
+              "example": "12345678"
             }
           }
+        ],
+        "responses": {
+          "200": { "description": "Berhasil mendapatkan metadata akun Free Fire" },
+          "400": { "description": "UID tidak disertakan atau format salah" },
+          "500": { "description": "Gagal memproses request atau server target down" }
         }
       }
     }
