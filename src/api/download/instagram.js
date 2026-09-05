@@ -2,35 +2,39 @@ const axios = require("axios");
 
 async function downloadIg(url) {
   try {
-    const response = await axios.post(
-      "https://igexport.com/api/video-downloader",
-      { url: url },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Referer: "https://igexport.com/id/video-download/",
-        },
-        timeout: 15000,
-      }
-    );
+    const response = await axios({
+      method: "POST",
+      url: "https://igexport.com/api/video-downloader",
+      data: { url: url },
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        Origin: "https://igexport.com",
+        Referer: "https://igexport.com/id/video-download/",
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+      },
+      timeout: 15000,
+    });
 
-    if (response.data && response.data.url) {
+    if (response.data && (response.data.url || response.data.download_url)) {
       return {
-        url: response.data.url,
-        thumbnail: response.data.thumbnail || null,
+        url: response.data.url || response.data.download_url,
+        thumbnail: response.data.thumbnail || response.data.cover || null,
       };
     }
 
     throw new Error("Gagal mengambil media dari Instagram.");
   } catch (err) {
+    if (err.response?.status === 405) {
+      throw new Error("Server website sumber memblokir request (405 Method Not Allowed).");
+    }
     throw new Error(err.response?.data?.message || err.message || "Gagal memproses URL Instagram.");
   }
 }
 
 module.exports = function (app) {
-  // Samakan dengan openapi.json
   app.get("/download/instagram", async (req, res) => {
     try {
       const { url } = req.query;
