@@ -27,10 +27,9 @@ async function uploadCatbox(fileBuffer, originalname) {
 }
 
 module.exports = function (app) {
-  // Method POST menggunakan express-fileupload
   app.post("/tools/catbox", async (req, res) => {
     try {
-      if (!req.files || !req.files.file) {
+      if (!req.files || Object.keys(req.files).length === 0) {
         return res.status(400).json({
           status: false,
           creator: "zyro",
@@ -38,7 +37,8 @@ module.exports = function (app) {
         });
       }
 
-      const uploadedFile = req.files.file;
+      // Ambil file dari field 'file' atau file pertama yang diupload
+      const uploadedFile = req.files.file || Object.values(req.files)[0];
       const url = await uploadCatbox(uploadedFile.data, uploadedFile.name);
 
       return res.status(200).json({
