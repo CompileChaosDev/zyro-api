@@ -1,4 +1,5 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 
 async function ytmp3(url) {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([^&\n?#]+)/);
@@ -9,26 +10,39 @@ async function ytmp3(url) {
 
   const id = match[1];
 
-  // Ambil metadata dari oembed
+  // 1. Ambil metadata dari oembed
   const meta = await axios.get(
     `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
   );
 
-  // Ambil link download dari y2jar
-  const dl = await axios.get(
-    `https://capi.y2jar.cc/scr/${id}?s=0`,
-    {
-      headers: {
-        'Accept': 'application/json',
-        'Origin': 'https://v2.y2jar.cc',
-        'Referer': `https://v2.y2jar.cc/?id=${id}`,
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/139.0.0.0 Mobile Safari/537.36'
-      }
+  // 2. Tembak form konversi di id.ytmp3.mobi
+  const init = await axios.get(`https://id.ytmp3.mobi/vkO/?url=${encodeURIComponent(url)}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+      'Referer': 'https://id.ytmp3.mobi/vkO/'
     }
-  );
+  });
 
-  if (!dl.data || !dl.data.downloadUrl) {
-    throw new Error('Gagal mendapatkan link download dari provider');
+  const $ = cheerio.load(init.data);
+  let downloadUrl = $('#downloadLink').attr('href') || $('a.btn-download').attr('href') || $('a[href*="get"]').attr('href');
+
+  // Fallback ke API internal jika link tidak ada di HTML statis
+  if (!downloadUrl) {
+    const apiRes = await axios.post('https://id.ytmp3.mobi/api/v1/convert', {
+      url: `https://www.youtube.com/watch?v=${id}`,
+      format: 'mp3'
+    }, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+        'Referer': 'https://id.ytmp3.mobi/vkO/'
+      }
+    }).catch(() => null);
+
+    downloadUrl = apiRes?.data?.url || apiRes?.data?.downloadUrl;
+  }
+
+  if (!downloadUrl) {
+    throw new Error('Gagal mengambil link MP3 dari id.ytmp3.mobi');
   }
 
   return {
@@ -41,7 +55,7 @@ async function ytmp3(url) {
     },
     download: {
       type: 'mp3',
-      url: dl.data.downloadUrl
+      url: downloadUrl
     }
   };
 }
